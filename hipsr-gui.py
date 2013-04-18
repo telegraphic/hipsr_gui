@@ -209,16 +209,16 @@ class HipsrGui(QtGui.QMainWindow):
         self.wf_dock.hide(), self.sb_dock.hide(), self.p_dock.hide()
         
         # Add toolbar icons
-        exitAction = QtGui.QAction(QtGui.QIcon('lib/icons/exit.png'), 'Exit', self)
+        exitAction = QtGui.QAction(QtGui.QIcon('icons/exit.png'), 'Exit', self)
         exitAction.setShortcut('Ctrl+Q')
         exitAction.triggered.connect(self.close)
-        sbAction   = QtGui.QAction(QtGui.QIcon('lib/icons/monitor.png'), 'Beam monitor', self)
+        sbAction   = QtGui.QAction(QtGui.QIcon('icons/monitor.png'), 'Beam monitor', self)
         sbAction.triggered.connect(self.toggleSingleBeamPlot)
-        pAction    = QtGui.QAction(QtGui.QIcon('lib/icons/power.png'), 'Power monitor', self)
+        pAction    = QtGui.QAction(QtGui.QIcon('icons/power.png'), 'Power monitor', self)
         pAction.triggered.connect(self.toggleOverallPowerPlot)
-        wfAction    = QtGui.QAction(QtGui.QIcon('lib/icons/spectrum.png'), 'Waterfall plot', self)
+        wfAction    = QtGui.QAction(QtGui.QIcon('icons/spectrum.png'), 'Waterfall plot', self)
         wfAction.triggered.connect(self.toggleWaterfallPlot)
-        settingsAction = QtGui.QAction(QtGui.QIcon('lib/icons/settings.png'), 'Change config', self)
+        settingsAction = QtGui.QAction(QtGui.QIcon('icons/settings.png'), 'Change config', self)
         settingsAction.triggered.connect(self.settings_window.toggle)
         
         self.toolbar = self.addToolBar("HIPSR toolbar")
@@ -491,7 +491,7 @@ class HipsrGui(QtGui.QMainWindow):
         for elem in self.udpBuffer:
             data = json.loads(elem)
             
-            print data.keys()
+            #print data.keys()
             for key in data.keys():
                 if key == 'tcs-frequency':
                     self.sb_c_freq =  float(data[key])

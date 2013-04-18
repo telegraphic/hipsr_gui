@@ -7,7 +7,7 @@ This script starts a Qt4 + matplotlib based graphical user interface for monitor
 
 Requirements
 ------------
-PySide (or PyQt), for Qt4 bindings
+PyQt4 (or PySide), for Qt4 bindings
 numpy, matplotlib.
 
 TODO: 
@@ -30,6 +30,11 @@ import json                     # Pack/unpack python dictionaries over UDP
 from collections import deque   # Ring buffer
 from optparse import OptionParser
 
+try:
+    import ujson as json
+except:
+    print "Warning: uJson not installed. Reverting to python's native Json (slower)"
+    import json
 
 try:
     import hipsr_core.qt_compat as qt_compat
@@ -43,13 +48,27 @@ except:
 import numpy as np
 
 import matplotlib
-matplotlib.use('Qt4Agg')
-matplotlib.rcParams['backend.qt4']='PySide'
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
-from matplotlib.figure import Figure
-import matplotlib.gridspec as gridspec
-import pylab as plt
+if matplotlib.__version__ == '0.99.3':
+    print "Error: your matplotlib version is too old to run this. Please upgrade."
+    exit()
+else:
+    matplotlib.use('Qt4Agg')
+    if qt_compat.USES_PYSIDE:
+        print "Using PySide-Matplotlib"
+        matplotlib.rcParams['backend.qt4']='PySide'
+    else:
+        print "Using PyQt4-Matplotlib"
+        matplotlib.rcParams['backend.qt4']='PyQt4'
+    from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
+    from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
+    from matplotlib.figure import Figure
+    import matplotlib.gridspec as gridspec
+try:
+    import pylab as plt
+except:
+    print "Error: cannot load Pylab. Check your matplotlib install."
+    exit()
+
 
 nbeams = 5
 ntime = 120

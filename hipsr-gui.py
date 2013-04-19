@@ -31,10 +31,11 @@ from collections import deque   # Ring buffer
 from optparse import OptionParser
 
 try:
+    print "Using uJson"
     import ujson as json
 except:
     print "Warning: uJson not installed. Reverting to python's native Json (slower)"
-    import json
+   import json
 
 try:
     import hipsr_core.qt_compat as qt_compat
@@ -277,7 +278,12 @@ class HipsrGui(QtGui.QMainWindow):
         initialized = False
         while self.udpServer.hasPendingDatagrams():
             datagram, host, port = self.udpServer.readDatagram(self.udpServer.pendingDatagramSize())
-            self.udpBuffer.append(datagram.data())
+            
+            try:
+                self.udpBuffer.append(datagram.data())
+            except:
+                self.udpBuffer.append(datagram)
+            
             self.udpCount += 1
             #print self.udpCount
             
@@ -575,8 +581,8 @@ if __name__ == '__main__':
     p.set_description(__doc__)
     p.add_option("-i", "--hostip", dest="hostip", type="string", default="127.0.0.1",
                  help="change host IP address to run server. Default is localhost (127.0.0.1)")
-    p.add_option("-p", "--hostport", dest="hostport", type="int", default=8080,
-                 help="change host port for server. Default is 12345")
+    p.add_option("-p", "--hostport", dest="hostport", type="int", default=59012,
+                 help="change host port for server. Default is 59012")
     p.add_option("-b", "--buffer", dest="buffer", type="int", default=8192,
                  help="change UDP buffer length. Default is 8192")
 

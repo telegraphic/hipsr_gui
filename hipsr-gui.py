@@ -173,8 +173,12 @@ class HipsrGui(QtGui.QMainWindow):
         combo = QtGui.QComboBox(self)
         combo.activated[str].connect(self.onBeamSelect)    
         self.activeBeam = "beam_01"
+        self.time_series_data = {}
+        
         beam_ids = ["beam_01","beam_02","beam_03","beam_04","beam_05","beam_06","beam_07", "beam_08","beam_09","beam_10","beam_11","beam_12","beam_13"]        
-        for beam in beam_ids: combo.addItem(beam)
+        for beam in beam_ids: 
+            combo.addItem(beam)
+            self.time_series_data[beam] = np.ones([150,256])
         
         # Widget layout
         self.sb_widget = QtGui.QWidget()
@@ -486,11 +490,16 @@ class HipsrGui(QtGui.QMainWindow):
         line_data_x[0], line_data_y[0] = xx, yy
         self.p_lines[key].set_ydata(line_data_x), self.p_lines[key+13].set_ydata(line_data_y)
         self.p_ax.set_ylim(g_min/1.01, g_max*1.01)
+    
+    def updateTimeSeriesData(self, key, new_data):
+        """ Update time series data for waterfall plot """
+        self.time_series_data[key] = np.roll(self.time_series_data[key], -1, axis=0)
+        self.time_series_data[key][0] = new_data
             
-    def updateWaterfallPlot(self, new_data):
+    def updateWaterfallPlot(self):
         """ Updates waterfall plot with new values """
-        self.wf_data = np.roll(self.wf_data, -1, axis=0)
-        self.wf_data[0] = new_data
+        
+        self.wf_data = self.time_series_data[self.activeBeam]
         self.wf_imshow.set_data(self.wf_data)
         
         avg = np.average(new_data[20:-20])
@@ -546,11 +555,13 @@ class HipsrGui(QtGui.QMainWindow):
                     self.mb_xpols[key].set_ydata(xx)
                     self.mb_ypols[key].set_ydata(yy)
                     self.updateOverallPowerPlot(key, np.array(xx).sum(), np.array(yy).sum())
+                    self.updateTimeSeriesData(key, xx)
                                           
                 if key == self.activeBeam:
                     self.sb_xpol.set_ydata(xx)
                     self.sb_ypol.set_ydata(yy)
-                    self.updateWaterfallPlot(xx)
+                    self.updateWaterfallPlot()
+                    
         
         # Redraw plots            
         self.mb_fig.canvas.draw()

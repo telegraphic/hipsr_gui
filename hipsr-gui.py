@@ -35,7 +35,7 @@ try:
     import ujson as json
 except:
     print "Warning: uJson not installed. Reverting to python's native Json (slower)"
-   import json
+    import json
 
 try:
     import hipsr_core.qt_compat as qt_compat
@@ -299,8 +299,6 @@ class HipsrGui(QtGui.QMainWindow):
         """ Beam selection combo box actions"""
         self.activeBeam = beam
         self.sb_title.set_text("Beam monitor: %s"%beam)
-        self.p_title.set_text("Overall Power: %s"%beam)
-        #self.p_idx, self.p_data = (0, np.zeros(ntime))
         self.updateAllPlots()
 
     def createSingleBeamPlot(self, numchans=256, beamid='beam_01'):
@@ -501,12 +499,14 @@ class HipsrGui(QtGui.QMainWindow):
         
         self.wf_data = self.time_series_data[self.activeBeam]
         self.wf_imshow.set_data(self.wf_data)
-        
+
+        new_data = self.time_series_data[self.activeBeam][0]        
         avg = np.average(new_data[20:-20])
         std = np.std(new_data[20:-20])
         thr = self.wf_thr
         ticks = np.linspace(avg - thr*std , avg + thr*std )
         
+        self.wf_ax.set_title("Beam: %s"%self.activeBeam)
         #self.wf_colorbar.set_clim(avg - thr*std , avg + thr*std )
         self.wf_imshow.set_clim(avg - thr*std , avg + thr*std )
         #self.wf_colorbar.set_ticks(ticks, update_ticks = False)

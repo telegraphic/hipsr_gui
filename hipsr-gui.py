@@ -24,7 +24,7 @@ __version__ = "0.1"
 __author__  = "Danny Price"
 
 # Imports
-import sys
+import sys, os
 import socket
 import json                     # Pack/unpack python dictionaries over UDP 
 from collections import deque   # Ring buffer
@@ -233,16 +233,18 @@ class HipsrGui(QtGui.QMainWindow):
         self.wf_dock.hide(), self.sb_dock.hide(), self.p_dock.hide()
         
         # Add toolbar icons
-        exitAction = QtGui.QAction(QtGui.QIcon('icons/exit.png'), 'Exit', self)
+        
+        abspath = os.path.dirname(os.path.realpath(__file__))
+        exitAction = QtGui.QAction(QtGui.QIcon(os.path.join(abspath, 'icons/exit.png')), 'Exit', self)
         exitAction.setShortcut('Ctrl+Q')
         exitAction.triggered.connect(self.close)
-        sbAction   = QtGui.QAction(QtGui.QIcon('icons/monitor.png'), 'Beam monitor', self)
+        sbAction   = QtGui.QAction(QtGui.QIcon(os.path.join(abspath, 'icons/monitor.png')), 'Beam monitor', self)
         sbAction.triggered.connect(self.toggleSingleBeamPlot)
-        pAction    = QtGui.QAction(QtGui.QIcon('icons/power.png'), 'Power monitor', self)
+        pAction    = QtGui.QAction(QtGui.QIcon(os.path.join(abspath, 'icons/power.png')), 'Power monitor', self)
         pAction.triggered.connect(self.toggleOverallPowerPlot)
-        wfAction    = QtGui.QAction(QtGui.QIcon('icons/spectrum.png'), 'Waterfall plot', self)
+        wfAction    = QtGui.QAction(QtGui.QIcon(os.path.join(abspath, 'icons/spectrum.png')), 'Waterfall plot', self)
         wfAction.triggered.connect(self.toggleWaterfallPlot)
-        settingsAction = QtGui.QAction(QtGui.QIcon('icons/settings.png'), 'Change config', self)
+        settingsAction = QtGui.QAction(QtGui.QIcon(os.path.join(abspath, 'icons/settings.png')), 'Change config', self)
         settingsAction.triggered.connect(self.settings_window.toggle)
         
         self.toolbar = self.addToolBar("HIPSR toolbar")

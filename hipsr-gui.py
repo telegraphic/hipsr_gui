@@ -196,7 +196,7 @@ class HipsrGui(QtGui.QMainWindow):
             yy = data[key]["yy"]
         self.mb_xpols[key].set_ydata(xx)
         self.mb_ypols[key].set_ydata(yy)
-        dmax, dmin = np.max([xx, yy])*1.1, np.min([xx, yy])*0.9
+        dmax, dmin = np.max([xx[1:-1], yy[1:-1]])*1.1, np.min([xx[1:-1], yy[1:-1]])*0.9
         self.mb_ax[key].set_ylim(dmin, dmax)
         self.updateOverallPowerPlot(key, np.array(xx).sum(), np.array(yy).sum())
         self.updateTimeSeriesData(key, xx)

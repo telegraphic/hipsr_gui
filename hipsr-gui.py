@@ -134,7 +134,77 @@ class HipsrGui(QtGui.QMainWindow):
         self.udpServer = QtNetwork.QUdpSocket(self)
         self.udpServer.bind(QtNetwork.QHostAddress(self.host), self.port)
         self.udpServer.readyRead.connect(self.bufferUDPData)
+    
+    def keyLookup(self, key, data):
+        """ A pythonic case statement that searches for keys in a dict. """
         
+        return {
+            "tcs-bandwidth": self.keyTcsBandwidth,
+            "tcs-frequency": self.keyTcsFrequency,
+            "beam_01" : self.keyBeam,
+            "beam_02" : self.keyBeam,
+            "beam_03" : self.keyBeam,
+            "beam_04" : self.keyBeam,
+            "beam_05" : self.keyBeam,
+            "beam_06" : self.keyBeam,
+            "beam_07" : self.keyBeam,
+            "beam_08" : self.keyBeam,
+            "beam_09" : self.keyBeam,
+            "beam_10" : self.keyBeam,
+            "beam_11" : self.keyBeam,
+            "beam_12" : self.keyBeam,
+            "beam_13" : self.keyBeam,
+
+            }.get(str(key), self.keyNoMatch)(key, data)    # setNoMatch is default if cmd not found
+    
+    def keyNoMatch(self, key, data=0):
+        print "Info: Unexpected key encountered."
+    
+    def keyTcsFrequency(self, key, data):
+        """ Update plots with new TCS Frequency """
+        self.sb_c_freq =  float(data[key])
+        cf = self.sb_c_freq
+        bw = np.abs(self.sb_bandwidth)
+        
+        x_data = np.linspace(cf-bw/2, cf+bw/2, 256)
+        self.sb_xpol.set_xdata(x_data)
+        self.sb_ypol.set_xdata(x_data)
+        self.sb_ax.set_xlabel("Frequency (MHz)")
+        self.sb_ax.set_xlim(cf-bw/2, cf+bw/2)
+        
+        wf_ticks = np.linspace(cf-bw/2, cf+bw/2, 256)[::32]
+        self.wf_ax.set_xlabel("Frequency (MHz)")
+        self.wf_ax.set_xticks(range(0,256)[::32])
+        self.wf_ax.set_xticklabels([int(t) for t in wf_ticks])
+        
+        for beam in ["beam_09", "beam_10"]:
+            self.mb_ax[beam].set_xlabel("Frequency (MHz)")
+            self.mb_ax[beam].set_xticks(range(0,256)[::32])
+            self.mb_ax[beam].set_xticklabels([int(t) for t in wf_ticks], rotation=45)
+
+    def keyTcsBandwidth(self, key, data):
+        """ Update with new TCS bandwidth """
+        self.sb_bandwidth =  float(data[key])
+    
+    def keyBeam(self, key, data):
+        """ Update plots with beam data """
+        if self.sb_bandwidth < 0:
+            xx = data[key]["xx"][::-1]
+            yy = data[key]["yy"][::-1]
+        else: 
+            xx = data[key]["xx"]
+            yy = data[key]["yy"]
+        self.mb_xpols[key].set_ydata(xx)
+        self.mb_ypols[key].set_ydata(yy)
+        dmax, dmin = np.max([xx, yy])*1.1, np.min([xx, yy])*0.9
+        self.mb_ax[key].set_ylim(dmin, dmax)
+        self.updateOverallPowerPlot(key, np.array(xx).sum(), np.array(yy).sum())
+        self.updateTimeSeriesData(key, xx)
+        
+        if key == self.activeBeam:
+            self.updateSingleBeamPlot(xx, yy)
+            self.updateWaterfallPlot()
+    
     def modifyUDPSocket(self):
         self.udpServer.close()
         self.udpServer(QtNetwork.QHostAddress(self.host), self.port)
@@ -317,10 +387,10 @@ class HipsrGui(QtGui.QMainWindow):
         ypol, = ax.plot(np.cumsum(np.ones(numchans)),np.ones(numchans), color=ypol_color)
         
         # Format plot
-        ax.set_ylim(40,80)
+        ax.set_ylim(0, 2)
         ax.set_xlim(0,numchans)
         ax.set_xlabel("Channel (-)")
-        ax.set_ylabel("Power (arb dB)")  
+        ax.set_ylabel("Power (-)")  
         
         # Set border colour  
         for child in ax.get_children():
@@ -328,6 +398,8 @@ class HipsrGui(QtGui.QMainWindow):
             child.set_color('#666666')
               
         fig.canvas.draw()
+        self.sb_max = 2
+        self.sb_min = 0
       
         return fig, ax, xpol, ypol, title
     
@@ -348,7 +420,7 @@ class HipsrGui(QtGui.QMainWindow):
         
         cb = fig.colorbar(wf)
         cb.set_clim(0,80)
-        cb.set_label("Power (dB)")
+        cb.set_label("Power (-)")
         #cb.set_ticks([0,2,4,6,8,10])
         fig.canvas.draw()
         
@@ -423,13 +495,19 @@ class HipsrGui(QtGui.QMainWindow):
             ypols[key], = axes[key].plot(np.cumsum(np.ones(numchans)),np.ones(numchans), color=ypol_color)
         
             # Format plot
-            axes[key].set_ylim(40,80)
+            dmax, dmin = 0, 2
+            axes[key].set_ylim(dmin, dmax)
             axes[key].set_xlim(0,numchans)
             
             # Plot styling
-            axes[key].get_xaxis().set_visible(False)
-            axes[key].get_yaxis().set_visible(False)
-        
+            axes[key].get_xaxis().set_visible(True)
+            axes[key].get_yaxis().set_visible(True)
+            
+            axes[key].set_yticklabels(["" for i in range(len(axes[key].get_yticks() ))])
+            axes[key].set_xticklabels(["" for i in range(len(axes[key].get_xticks() ))])
+            #axes["beam_08"].get_yaxis().set_visible(True)
+            #axes["beam_09"].get_xaxis().set_visible(True)
+            #axes["beam_10"].get_xaxis().set_visible(True)
 
           fig.canvas.draw()
           
@@ -513,6 +591,25 @@ class HipsrGui(QtGui.QMainWindow):
         self.wf_imshow.set_clim(avg - thr*std , avg + thr*std )
         #self.wf_colorbar.set_ticks(ticks, update_ticks = False)
         #self.wf_colorbar.update_ticks()
+    
+    def updateSingleBeamPlot(self, xx, yy):
+        """ Updates single beam plot with new data """
+        self.sb_xpol.set_ydata(xx)
+        self.sb_ypol.set_ydata(yy)
+        
+        update_ax = False
+        dmax, dmin = np.max([xx, yy]), np.min([xx, yy])
+        if dmax > self.sb_max:
+            update_ax = True
+            self.sb_max = dmax
+        if dmin < self.sb_min:
+            update_ax = True 
+            self.sb_min = dmin
+        if update_ax:
+             self.sb_ax.set_ylim(self.sb_min, self.sb_max)
+             
+        self.sb_fig.canvas.draw()
+        
         
     def updateWaterfallThreshold(self):
         """ Change the threshold value for the waterfall plot """
@@ -523,51 +620,17 @@ class HipsrGui(QtGui.QMainWindow):
         self.wf_fig.canvas.draw()
 
     def updateAllPlots(self):
-        """ Redraw all graphs in GUI """ 
+        """ Redraw all graphs in GUI when new data arrives """ 
         for elem in self.udpBuffer:
             data = json.loads(elem)
             
             #print data.keys()
             for key in data.keys():
-                if key == 'tcs-frequency':
-                    self.sb_c_freq =  float(data[key])
-                    cf = self.sb_c_freq
-                    bw = np.abs(self.sb_bandwidth)
-                    
-                    x_data = np.linspace(cf-bw/2, cf+bw/2, 256)
-                    self.sb_xpol.set_xdata(x_data)
-                    self.sb_ypol.set_xdata(x_data)
-                    self.sb_ax.set_xlabel("Frequency (MHz)")
-                    self.sb_ax.set_xlim(cf-bw/2, cf+bw/2)
-                    
-                    wf_ticks = np.linspace(cf-bw/2, cf+bw/2, 256)[::32]
-                    self.wf_ax.set_xlabel("Frequency (MHz)")
-                    self.wf_ax.set_xticks(range(0,256)[::32])
-                    self.wf_ax.set_xticklabels([int(t) for t in wf_ticks])
-                elif key == 'tcs-bandwidth':
-                    self.sb_bandwidth =  float(data[key])    
-                
-                else:
-                    if self.sb_bandwidth < 0:
-                        xx = data[key]["xx"][::-1]
-                        yy = data[key]["yy"][::-1]
-                    else: 
-                        xx = data[key]["xx"]
-                        yy = data[key]["yy"]
-                    self.mb_xpols[key].set_ydata(xx)
-                    self.mb_ypols[key].set_ydata(yy)
-                    self.updateOverallPowerPlot(key, np.array(xx).sum(), np.array(yy).sum())
-                    self.updateTimeSeriesData(key, xx)
-                                          
-                if key == self.activeBeam:
-                    self.sb_xpol.set_ydata(xx)
-                    self.sb_ypol.set_ydata(yy)
-                    self.updateWaterfallPlot()
-                    
+                self.keyLookup(key, data)
         
         # Redraw plots            
         self.mb_fig.canvas.draw()
-        self.sb_fig.canvas.draw()
+        
         self.p_fig.canvas.draw()
         self.wf_fig.canvas.draw()
         

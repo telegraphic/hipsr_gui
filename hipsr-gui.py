@@ -134,6 +134,9 @@ class HipsrGui(QtGui.QMainWindow):
         self.udpServer = QtNetwork.QUdpSocket(self)
         self.udpServer.bind(QtNetwork.QHostAddress(self.host), self.port)
         self.udpServer.readyRead.connect(self.bufferUDPData)
+
+        self.ra = 0.0
+        self.dec = 0.0
     
     def keyLookup(self, key, data):
         """ A pythonic case statement that searches for keys in a dict. """
@@ -141,6 +144,8 @@ class HipsrGui(QtGui.QMainWindow):
         return {
             "tcs-bandwidth": self.keyTcsBandwidth,
             "tcs-frequency": self.keyTcsFrequency,
+            "tcs-ra"  : self.keyRa,
+            "tcs-dec" : self.keyDec,
             "beam_01" : self.keyBeam,
             "beam_02" : self.keyBeam,
             "beam_03" : self.keyBeam,
@@ -159,7 +164,15 @@ class HipsrGui(QtGui.QMainWindow):
     
     def keyNoMatch(self, key, data=0):
         print "Info: Unexpected key encountered."
-    
+
+    def keyRa(self, key, data):
+        """ update RA  """
+        self.ra = float(data[key])
+
+    def keyDec(self, key, data):
+        """ update DEC  """
+        self.dec = float(data[key])
+
     def keyTcsFrequency(self, key, data):
         """ Update plots with new TCS Frequency """
         self.sb_c_freq =  float(data[key])
@@ -363,7 +376,7 @@ class HipsrGui(QtGui.QMainWindow):
             self.udpCount += 1
             #print self.udpCount
             
-            if self.udpCount == 13:
+            if self.udpCount == 15:
                 self.updateAllPlots()
        
        
@@ -445,7 +458,10 @@ class HipsrGui(QtGui.QMainWindow):
           fig.text(0.53-0.15, 0.46+0.075+0.15, "13", size=20)
           fig.text(0.53-0.3, 0.46, "08", size=20)
           fig.text(0.53+0.3, 0.46, "11", size=20)
-          
+
+          self.ra_dec_text = fig.text(0.05, 0.05, "RA: 00.00, DEC: 00.00", size=20)
+          #self.ra_dec_text.set_text("RA: 10.00, DEC: 20.00")
+
           xpol_color = '#00CC00'
           ypol_color = '#CC0000'
       
@@ -598,13 +614,17 @@ class HipsrGui(QtGui.QMainWindow):
         self.sb_ypol.set_ydata(yy)
         
         update_ax = False
-        dmax, dmin = np.max([xx, yy]), np.min([xx, yy])
+        dmax, dmin = np.max([xx[1:-1], yy[1:-1]]), np.min([xx[1:-1], yy[1:-1]])
         if dmax > self.sb_max:
             update_ax = True
             self.sb_max = dmax
         if dmin < self.sb_min:
             update_ax = True 
             self.sb_min = dmin
+        if dmax < 2 * self.sb_max:
+            update_ax = True
+        if dmin > 2 * self.sb_min:
+            update_ax = True
         if update_ax:
              self.sb_ax.set_ylim(self.sb_min, self.sb_max)
              
@@ -633,7 +653,8 @@ class HipsrGui(QtGui.QMainWindow):
         
         self.p_fig.canvas.draw()
         self.wf_fig.canvas.draw()
-        
+
+        self.ra_dec_text.set_text("RA: %2.2f, DEC: %2.2f"%(self.ra, self.dec))
         # Clear buffer
         self.udpCount = 0
         self.udpBuffer.clear()    
